@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: kitobxon-backend
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd backend && npm install && node seed.js
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        value: https://your-frontend.vercel.app
+    disk:
+      name: kitobxon-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1

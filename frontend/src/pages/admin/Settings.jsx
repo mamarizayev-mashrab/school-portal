@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../api/axios';
-import { Settings, Save, Database, Upload, FileText, CheckCircle, Download, ShieldCheck } from 'lucide-react';
+import { Settings, Save, Database, Upload, FileText, CheckCircle, Download, ShieldCheck, Sparkles, HardDrive, Zap, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminSettings() {
@@ -67,126 +67,181 @@ export default function AdminSettings() {
         }
     };
 
-    if (loading) return <div className="space-y-4">{[1, 2, 3].map(i => <div key={i} className="h-40 animate-shimmer rounded-xl" />)}</div>;
+    if (loading) return (
+        <div className="space-y-4 animate-fade-in max-w-5xl mx-auto">
+            <div className="h-20 animate-shimmer rounded-2xl" />
+            <div className="grid grid-cols-2 gap-4">
+                {[1, 2].map(i => <div key={i} className="h-64 animate-shimmer rounded-2xl" />)}
+            </div>
+            <div className="h-64 animate-shimmer rounded-2xl" />
+        </div>
+    );
 
     return (
         <div className="space-y-6 animate-fade-in max-w-5xl mx-auto pb-10">
-            <div>
-                <h1 className="text-2xl font-bold text-vercel-text flex items-center gap-3">
-                    <Settings className="text-vercel-accent" size={24} />
-                    Tizim Sozlamalari
-                </h1>
-                <p className="text-vercel-text-secondary text-sm mt-1">
-                    Xavfsizlik, Import va Gamification qoidalari
-                </p>
+            {/* Header */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-vercel-surface via-vercel-surface to-vercel-surface-2 border border-vercel-border/60 p-6">
+                <div className="absolute inset-0 dot-pattern opacity-30" />
+                <div className="absolute top-0 right-0 w-48 h-48 bg-purple-500/[0.03] rounded-full blur-3xl" />
+                <div className="relative z-10 flex items-center gap-3">
+                    <div className="p-2.5 bg-gradient-to-br from-purple-500/20 to-violet-500/5 rounded-xl border border-purple-500/10">
+                        <Settings className="text-purple-400" size={22} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-bold text-vercel-text tracking-tight">Tizim Sozlamalari</h1>
+                        <p className="text-vercel-text-secondary text-xs mt-0.5">
+                            Xavfsizlik, Import va Gamification qoidalari
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Backup Card */}
+                <div className="relative overflow-hidden bg-vercel-surface border border-vercel-border/60 rounded-2xl p-6 group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/[0.03] rounded-full blur-3xl group-hover:bg-blue-500/[0.06] transition-all duration-700" />
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 bg-gradient-to-br from-blue-500/20 to-cyan-500/5 rounded-xl border border-blue-500/10">
+                                <Database size={20} className="text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-vercel-text">Ma'lumotlar Bazasi</h3>
+                                <p className="text-xs text-vercel-text-secondary mt-0.5">Xavfsizlik uchun nusxa oling</p>
+                            </div>
+                        </div>
 
-                {/* 1. Backup Card */}
-                <div className="bg-vercel-surface border border-vercel-border rounded-xl p-6">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="p-3 bg-blue-500/10 rounded-lg text-blue-500">
-                            <Database size={24} />
+                        <div className="bg-vercel-bg/50 rounded-xl p-4 mb-5 border border-vercel-border/30 space-y-2">
+                            <div className="flex items-center gap-2">
+                                <HardDrive size={13} className="text-blue-400/60" />
+                                <p className="text-xs text-vercel-text-secondary">Fayl: <code className="text-vercel-text font-medium bg-vercel-surface-2 px-1.5 py-0.5 rounded">kitobxon.db</code></p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Info size={13} className="text-blue-400/60" />
+                                <p className="text-xs text-vercel-text-secondary">Foydalanuvchilar, kitoblar va statistika</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-lg font-medium text-vercel-text">Ma'lumotlar Bazasi (Backup)</h3>
-                            <p className="text-sm text-vercel-text-secondary">Xavfsizlik uchun nusxa oling</p>
-                        </div>
-                    </div>
-                    <div className="bg-vercel-surface-2 p-4 rounded-lg mb-6 text-sm text-vercel-text-secondary">
-                        <p>Oxirgi marta saqlangan sana: <strong>Bugun</strong></p>
-                        <p className="mt-2">Tizimdagi barcha foydalanuvchilar, kitoblar va statistika <code>kitobxon.db</code> faylida saqlanadi.</p>
-                    </div>
-                    <button
-                        onClick={handleBackup}
-                        className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                        <Download size={18} /> Bazani Yuklab Olish (.db)
-                    </button>
-                </div>
 
-                {/* 2. Gamification Config */}
-                <div className="bg-vercel-surface border border-vercel-border rounded-xl p-6">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="p-3 bg-purple-500/10 rounded-lg text-purple-500">
-                            <ShieldCheck size={24} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-medium text-vercel-text">Ballar Tizimi (XP)</h3>
-                            <p className="text-sm text-vercel-text-secondary">Rag'batlantirish qoidalari</p>
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-sm text-vercel-text-secondary block mb-1.5">1 sahifa o'qigani uchun (XP)</label>
-                            <input
-                                type="number"
-                                value={xpSettings.xp_per_page}
-                                onChange={(e) => setXpSettings({ ...xpSettings, xp_per_page: e.target.value })}
-                                className="w-full px-3 py-2 bg-vercel-bg border border-vercel-border rounded-lg text-vercel-text focus:border-purple-500 outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-sm text-vercel-text-secondary block mb-1.5">Kitob tugatgani uchun bonus (XP)</label>
-                            <input
-                                type="number"
-                                value={xpSettings.xp_per_book}
-                                onChange={(e) => setXpSettings({ ...xpSettings, xp_per_book: e.target.value })}
-                                className="w-full px-3 py-2 bg-vercel-bg border border-vercel-border rounded-lg text-vercel-text focus:border-purple-500 outline-none"
-                            />
-                        </div>
                         <button
-                            onClick={handleSaveXP}
-                            className="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 mt-2"
+                            onClick={handleBackup}
+                            className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-[0.98] text-sm"
                         >
-                            <Save size={18} /> Saqlash
+                            <Download size={16} /> Bazani Yuklab Olish
                         </button>
                     </div>
                 </div>
 
-                {/* 3. User Import */}
-                <div className="bg-vercel-surface border border-vercel-border rounded-xl p-6 lg:col-span-2">
-                    <div className="flex items-center gap-4 mb-6">
-                        <div className="p-3 bg-emerald-500/10 rounded-lg text-emerald-500">
-                            <Upload size={24} />
+                {/* Gamification Config */}
+                <div className="relative overflow-hidden bg-vercel-surface border border-vercel-border/60 rounded-2xl p-6 group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/[0.03] rounded-full blur-3xl group-hover:bg-purple-500/[0.06] transition-all duration-700" />
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 bg-gradient-to-br from-purple-500/20 to-pink-500/5 rounded-xl border border-purple-500/10">
+                                <Sparkles size={20} className="text-purple-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-vercel-text">Ballar Tizimi (XP)</h3>
+                                <p className="text-xs text-vercel-text-secondary mt-0.5">Rag'batlantirish qoidalari</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-lg font-medium text-vercel-text">Ommaviy User Qo'shish (Import)</h3>
-                            <p className="text-sm text-vercel-text-secondary">CSV formatidagi ma'lumotlarni yuklash</p>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <textarea
-                                value={csvText}
-                                onChange={(e) => setCsvText(e.target.value)}
-                                placeholder={`Ism,Familiya,Student_ID,Sinf\nAli,Valiyev,AV1234,7-A\nDoniyor,Toshmatov,DT5678,8-B`}
-                                className="w-full h-48 px-4 py-3 bg-vercel-bg border border-vercel-border rounded-lg text-sm font-mono text-vercel-text focus:border-emerald-500 outline-none resize-none placeholder-vercel-text-secondary/50"
-                            />
-                            <p className="text-xs text-vercel-text-secondary mt-2">Format: <code>Ism,Familiya,Student_ID,Sinf</code> (Har bir user yangi qatorda)</p>
-                        </div>
                         <div className="space-y-4">
-                            <div className="bg-vercel-surface-2 p-4 rounded-lg">
-                                <h4 className="text-sm font-medium text-vercel-text mb-2 flex items-center gap-2"><CheckCircle size={14} className="text-emerald-500" /> Ko'rsatmalar:</h4>
-                                <ul className="text-xs text-vercel-text-secondary space-y-1 list-disc list-inside">
-                                    <li>Student ID formati: 2 ta harf + 4 ta raqam (masalan: AV1234).</li>
-                                    <li>Student ID takrorlanmasligi kerak.</li>
-                                    <li>Barcha yangi userlarga default parol: <code>123456</code> beriladi.</li>
-                                </ul>
+                            <div>
+                                <label className="text-[11px] font-medium text-vercel-text-secondary mb-2 block uppercase tracking-wider">
+                                    1 sahifa o'qigani uchun (XP)
+                                </label>
+                                <div className="relative">
+                                    <Zap size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400/50" />
+                                    <input
+                                        type="number"
+                                        value={xpSettings.xp_per_page}
+                                        onChange={(e) => setXpSettings({ ...xpSettings, xp_per_page: e.target.value })}
+                                        className="w-full pl-9 pr-4 py-2.5 bg-vercel-bg border border-vercel-border/60 rounded-xl text-vercel-text text-sm focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-[11px] font-medium text-vercel-text-secondary mb-2 block uppercase tracking-wider">
+                                    Kitob tugatgani uchun bonus (XP)
+                                </label>
+                                <div className="relative">
+                                    <Zap size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400/50" />
+                                    <input
+                                        type="number"
+                                        value={xpSettings.xp_per_book}
+                                        onChange={(e) => setXpSettings({ ...xpSettings, xp_per_book: e.target.value })}
+                                        className="w-full pl-9 pr-4 py-2.5 bg-vercel-bg border border-vercel-border/60 rounded-xl text-vercel-text text-sm focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/20 outline-none transition-all"
+                                    />
+                                </div>
                             </div>
                             <button
-                                onClick={handleImport}
-                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                                onClick={handleSaveXP}
+                                className="w-full py-3 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-purple-500/10 hover:shadow-purple-500/20 active:scale-[0.98] text-sm mt-1"
                             >
-                                <FileText size={18} /> Importni Boshlash
+                                <Save size={16} /> Saqlash
                             </button>
                         </div>
                     </div>
                 </div>
 
+                {/* User Import */}
+                <div className="relative overflow-hidden bg-vercel-surface border border-vercel-border/60 rounded-2xl p-6 lg:col-span-2 group">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/[0.03] rounded-full blur-3xl group-hover:bg-emerald-500/[0.06] transition-all duration-700" />
+                    <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 bg-gradient-to-br from-emerald-500/20 to-green-500/5 rounded-xl border border-emerald-500/10">
+                                <Upload size={20} className="text-emerald-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-semibold text-vercel-text">Ommaviy User Qo'shish (Import)</h3>
+                                <p className="text-xs text-vercel-text-secondary mt-0.5">CSV formatidagi ma'lumotlarni yuklash</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label className="text-[11px] font-medium text-vercel-text-secondary mb-2 block uppercase tracking-wider">
+                                    CSV ma'lumotlari
+                                </label>
+                                <textarea
+                                    value={csvText}
+                                    onChange={(e) => setCsvText(e.target.value)}
+                                    placeholder={`Ism,Familiya,Student_ID,Sinf\nAli,Valiyev,AV1234,7-A\nDoniyor,Toshmatov,DT5678,8-B`}
+                                    className="w-full h-48 px-4 py-3 bg-vercel-bg border border-vercel-border/60 rounded-xl text-sm font-mono text-vercel-text focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 outline-none resize-none placeholder-vercel-text-secondary/30 transition-all"
+                                />
+                                <p className="text-[11px] text-vercel-text-secondary/60 mt-2 flex items-center gap-1">
+                                    <Info size={10} />
+                                    Format: <code className="bg-vercel-surface-2 px-1 py-0.5 rounded text-vercel-text-secondary">Ism,Familiya,Student_ID,Sinf</code>
+                                </p>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="bg-vercel-bg/50 rounded-xl p-5 border border-vercel-border/30">
+                                    <h4 className="text-xs font-semibold text-vercel-text mb-3 flex items-center gap-2">
+                                        <CheckCircle size={13} className="text-emerald-400" /> Ko'rsatmalar
+                                    </h4>
+                                    <ul className="space-y-2.5">
+                                        {[
+                                            "Student ID formati: 2 ta harf + 4 ta raqam (masalan: AV1234)",
+                                            "Student ID takrorlanmasligi kerak",
+                                            "Barcha yangi userlarga default parol: 123456"
+                                        ].map((item, i) => (
+                                            <li key={i} className="flex items-start gap-2">
+                                                <div className="w-1 h-1 rounded-full bg-emerald-400/50 mt-1.5 flex-shrink-0" />
+                                                <span className="text-xs text-vercel-text-secondary leading-relaxed">{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <button
+                                    onClick={handleImport}
+                                    className="w-full py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.98] text-sm"
+                                >
+                                    <FileText size={16} /> Importni Boshlash
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

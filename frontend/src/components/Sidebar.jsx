@@ -1,13 +1,13 @@
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 import {
-    LayoutDashboard, BookOpen, User, BookPlus, Trophy, Bell,
-    Settings, LogOut, CheckCircle, GraduationCap, Users,
-    BarChart2, FileText, ChevronLeft, ChevronRight, ShieldAlert,
+    LayoutDashboard, BookOpen, User, Trophy, Bell,
+    Settings, LogOut, GraduationCap, Users,
+    FileText, ShieldAlert,
     PlusCircle, ClipboardCheck, Award, CalendarDays, BarChart3,
-    Flame, Menu, X
+    Flame, Menu, X, Library, Sparkles, Crown
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -47,6 +47,7 @@ export default function Sidebar() {
         { to: '/student/add-book', icon: PlusCircle, label: "Kitob qo'shish" },
         { to: '/student/my-books', icon: BookOpen, label: 'Kitoblarim' },
         { to: '/student/quiz', icon: ClipboardCheck, label: 'Test topshirish' },
+        { to: '/student/library', icon: Library, label: 'Kutubxona' },
         { to: '/student/leaderboard', icon: Trophy, label: 'Reyting' },
         { to: '/student/badges', icon: Award, label: 'Nishonlar' },
         { to: '/student/plan', icon: CalendarDays, label: "O'qish rejasi" },
@@ -58,6 +59,7 @@ export default function Sidebar() {
         { to: '/teacher', icon: LayoutDashboard, label: 'Bosh sahifa' },
         { to: '/teacher/class-stats', icon: BarChart3, label: 'Sinf statistikasi' },
         { to: '/teacher/summaries', icon: ClipboardCheck, label: 'Xulosalar' },
+        { to: '/teacher/library', icon: Library, label: 'Kutubxona' },
         { to: '/notifications', icon: Bell, label: 'Bildirishnomalar', badge: unread },
         { to: '/profile', icon: User, label: 'Profilim' },
     ];
@@ -65,78 +67,145 @@ export default function Sidebar() {
     const adminLinks = [
         { to: '/admin', icon: LayoutDashboard, label: 'Boshqaruv paneli' },
         { to: '/admin/users', icon: Users, label: 'Foydalanuvchilar' },
-        { to: '/admin/books', icon: BookOpen, label: 'Kitoblar' },
+        { to: '/admin/library', icon: Library, label: 'Kutubxona' },
         { to: '/teacher/summaries', icon: FileText, label: 'Xulosalar', badge: pendingSummaries },
         ...(user?.role === 'superadmin' ? [{ to: '/admin/audit', icon: ShieldAlert, label: 'Audit Log' }] : []),
         { to: '/admin/settings', icon: Settings, label: 'Sozlamalar' }
     ];
 
     const links = (user?.role === 'admin' || user?.role === 'superadmin') ? adminLinks : user?.role === 'teacher' ? teacherLinks : studentLinks;
+    const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
     const linkClass = ({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
-            ? 'bg-vercel-accent/10 text-vercel-accent'
-            : 'text-vercel-text-secondary hover:text-vercel-text hover:bg-vercel-surface-2'
+        `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200 relative ${isActive
+            ? 'bg-vercel-accent/[0.08] text-vercel-accent shadow-sm'
+            : 'text-vercel-text-secondary hover:text-vercel-text hover:bg-white/[0.04]'
         }`;
 
     return (
         <>
             {/* Mobile toggle */}
             <button onClick={() => setOpen(!open)}
-                className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-vercel-surface border border-vercel-border rounded-lg text-vercel-text">
-                {open ? <X size={20} /> : <Menu size={20} />}
+                className="lg:hidden fixed top-4 left-4 z-50 p-2.5 glass rounded-xl text-vercel-text shadow-lg">
+                {open ? <X size={18} /> : <Menu size={18} />}
             </button>
 
             {/* Overlay */}
-            {open && <div className="lg:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setOpen(false)} />}
+            {open && <div className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />}
 
             {/* Sidebar */}
-            <aside className={`fixed lg:static top-0 left-0 z-40 w-64 h-screen bg-vercel-surface border-r border-vercel-border
-        flex flex-col transition-transform duration-300 ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <aside className={`fixed lg:static top-0 left-0 z-40 w-[260px] h-screen bg-vercel-surface/95 backdrop-blur-xl border-r border-vercel-border/60
+                flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
 
-                {/* Logo */}
-                <div className="p-5 border-b border-vercel-border">
-                    <div className="flex items-center gap-2.5">
-                        <div className="p-1.5 bg-vercel-accent/10 rounded-lg">
-                            <GraduationCap size={20} className="text-vercel-accent" />
+                {/* Brand & Profile Section */}
+                <div className="p-3 mb-2 space-y-4">
+                    {/* Brand */}
+                    <div className="flex items-center gap-3 px-2 pt-2">
+                        <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20">
+                            <GraduationCap className="text-white" size={20} />
+                            <div className="absolute inset-0 bg-white/20 rounded-xl pointer-events-none" />
                         </div>
-                        <span className="text-base font-bold text-vercel-text tracking-tight">Kitobxon</span>
+                        <div>
+                            <h1 className="text-lg font-bold text-white tracking-tight leading-none mb-0.5">Kitobxon</h1>
+                            <p className="text-[11px] font-medium text-white/40 tracking-wide">Ta'lim Platformasi</p>
+                        </div>
+                    </div>
+
+                    {/* Profile Card */}
+                    <div className="relative group overflow-hidden rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.05] transition-all duration-300">
+                        <div className="p-3 flex items-center gap-3">
+                            {/* Avatar */}
+                            <div className="relative">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-b from-gray-700 to-black p-[1px]">
+                                    <div className="w-full h-full rounded-full bg-black flex items-center justify-center relative overflow-hidden">
+                                        {/* Gradient Background for Avatar */}
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-vercel-accent/40 to-purple-500/40 opacity-50" />
+                                        <span className="relative z-10 font-bold text-white text-sm">{user?.ism?.[0]}</span>
+                                    </div>
+                                </div>
+                                {/* Online Dot */}
+                                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-black rounded-full flex items-center justify-center">
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                </div>
+                            </div>
+
+                            {/* Text Info */}
+                            <div className="min-w-0 flex-1">
+                                <h3 className="text-sm font-semibold text-white/90 truncate leading-tight mb-1">
+                                    {user?.ism} {user?.familiya}
+                                </h3>
+                                {/* Badges Row */}
+                                <div className="flex flex-wrap gap-1.5">
+                                    {/* Role Badge */}
+                                    <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] border ${isAdmin
+                                            ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                            : user?.role === 'teacher'
+                                                ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                        }`}>
+                                        {isAdmin && <Crown size={9} />}
+                                        <span className="text-[9px] font-bold uppercase tracking-wider">
+                                            {isAdmin ? 'Super Admin' : user?.role === 'teacher' ? 'O\'qituvchi' : 'O\'quvchi'}
+                                        </span>
+                                    </div>
+
+                                    {/* Class Badge (Student) */}
+                                    {user?.sinf && (
+                                        <div className="inline-flex items-center px-1.5 py-0.5 rounded-[6px] border bg-white/[0.05] border-white/10 text-white/60">
+                                            <span className="text-[9px] font-medium">{user.sinf}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Streak (Student) */}
+                                    {streak > 0 && user?.role === 'student' && (
+                                        <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] border bg-orange-500/10 border-orange-500/20 text-orange-400">
+                                            <Flame size={8} />
+                                            <span className="text-[9px] font-bold">{streak}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {/* User Info */}
-                <div className="px-5 py-4 border-b border-vercel-border">
-                    <p className="text-sm font-medium text-vercel-text">{user?.ism} {user?.familiya}</p>
-                    <p className="text-xs text-vercel-text-secondary">
-                        {user?.role === 'student' ? "O'quvchi" : user?.role === 'teacher' ? "O'qituvchi" : 'Admin'}
-                    </p>
-                    {user?.sinf && <p className="text-xs text-vercel-text-secondary">{user.sinf}</p>}
-                    {streak > 0 && user?.role === 'student' && (
-                        <div className="flex items-center gap-1 mt-1.5 text-xs text-orange-400">
-                            <Flame size={12} /> {streak} kunlik streak
-                        </div>
-                    )}
-                </div>
+                {/* Separator */}
+                <div className="h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mx-4 mb-2" />
 
                 {/* Navigation */}
-                <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+                <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
+                    {isAdmin && (
+                        <div className="px-3 py-2">
+                            <span className="text-[10px] font-semibold text-vercel-text-secondary/60 uppercase tracking-[0.1em]">Boshqaruv</span>
+                        </div>
+                    )}
                     {links.map(({ to, icon: Icon, label, badge }) => (
                         <NavLink key={to} to={to} end={to === '/student' || to === '/teacher' || to === '/admin'}
                             className={linkClass} onClick={() => setOpen(false)}>
-                            <Icon size={18} />
-                            <span className="flex-1">{label}</span>
-                            {badge > 0 && (
-                                <span className="px-1.5 py-0.5 text-xs bg-vercel-error text-white rounded-full min-w-[20px] text-center">{badge}</span>
+                            {({ isActive }) => (
+                                <>
+                                    {isActive && (
+                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 bg-vercel-accent rounded-r-full" />
+                                    )}
+                                    <Icon size={17} className={isActive ? 'text-vercel-accent' : 'text-vercel-text-secondary group-hover:text-vercel-text'} />
+                                    <span className="flex-1 truncate">{label}</span>
+                                    {badge > 0 && (
+                                        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-vercel-error text-white rounded-full min-w-[18px] text-center leading-tight">
+                                            {badge}
+                                        </span>
+                                    )}
+                                </>
                             )}
                         </NavLink>
                     ))}
                 </nav>
 
                 {/* Logout */}
-                <div className="p-3 border-t border-vercel-border">
+                <div className="p-3 border-t border-vercel-border/50">
                     <button onClick={handleLogout}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-vercel-text-secondary hover:text-vercel-error hover:bg-vercel-error/5 transition-all w-full">
-                        <LogOut size={18} /> Chiqish
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-vercel-text-secondary hover:text-vercel-error hover:bg-vercel-error/[0.06] transition-all w-full group">
+                        <LogOut size={17} className="group-hover:text-vercel-error transition-colors" />
+                        <span>Chiqish</span>
                     </button>
                 </div>
             </aside>

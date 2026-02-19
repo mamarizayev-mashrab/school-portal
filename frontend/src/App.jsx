@@ -26,9 +26,12 @@ import ReviewSummaries from './pages/teacher/ReviewSummaries';
 // Admin
 import AdminDashboard from './pages/admin/Dashboard';
 import ManageUsers from './pages/admin/ManageUsers';
-import ManageBooks from './pages/admin/ManageBooks';
 import AdminSettings from './pages/admin/Settings';
 import AuditLogs from './pages/admin/AuditLogs';
+import ManageLibrary from './pages/admin/ManageLibrary';
+
+// Shared
+import Library from './pages/Library';
 
 function ProtectedRoute({ children, roles }) {
     const { user, loading } = useAuth();
@@ -64,6 +67,7 @@ export default function App() {
                 <Route path="/student/leaderboard" element={<ProtectedRoute roles={['student']}><Layout><Leaderboard /></Layout></ProtectedRoute>} />
                 <Route path="/student/badges" element={<ProtectedRoute roles={['student']}><Layout><Badges /></Layout></ProtectedRoute>} />
                 <Route path="/student/plan" element={<ProtectedRoute roles={['student']}><Layout><ReadingPlan /></Layout></ProtectedRoute>} />
+                <Route path="/student/library" element={<ProtectedRoute roles={['student']}><Layout><Library /></Layout></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Layout><Notifications /></Layout></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
 
@@ -71,13 +75,14 @@ export default function App() {
                 <Route path="/teacher" element={<ProtectedRoute roles={['teacher']}><Layout><TeacherDashboard /></Layout></ProtectedRoute>} />
                 <Route path="/teacher/class-stats" element={<ProtectedRoute roles={['teacher', 'superadmin']}><Layout><ClassStats /></Layout></ProtectedRoute>} />
                 <Route path="/teacher/summaries" element={<ProtectedRoute roles={['teacher', 'superadmin']}><Layout><ReviewSummaries /></Layout></ProtectedRoute>} />
+                <Route path="/teacher/library" element={<ProtectedRoute roles={['teacher']}><Layout><Library /></Layout></ProtectedRoute>} />
 
                 {/* Admin */}
                 <Route path="/admin" element={<ProtectedRoute roles={['superadmin']}><Layout><AdminDashboard /></Layout></ProtectedRoute>} />
                 <Route path="/admin/users" element={<ProtectedRoute roles={['superadmin']}><Layout><ManageUsers /></Layout></ProtectedRoute>} />
-                <Route path="/admin/books" element={<ProtectedRoute roles={['superadmin']}><Layout><ManageBooks /></Layout></ProtectedRoute>} />
                 <Route path="/admin/audit" element={<ProtectedRoute roles={['superadmin']}><Layout><AuditLogs /></Layout></ProtectedRoute>} />
                 <Route path="/admin/settings" element={<ProtectedRoute roles={['superadmin']}><Layout><AdminSettings /></Layout></ProtectedRoute>} />
+                <Route path="/admin/library" element={<ProtectedRoute roles={['superadmin']}><Layout><ManageLibrary /></Layout></ProtectedRoute>} />
 
                 {/* Default */}
                 <Route path="*" element={<Navigate to="/login" />} />
