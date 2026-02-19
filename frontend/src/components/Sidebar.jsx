@@ -100,16 +100,7 @@ export default function Sidebar() {
                 {/* Brand & Profile Section */}
                 <div className="p-3 mb-2 space-y-4">
                     {/* Brand */}
-                    <div className="flex items-center gap-3 px-2 pt-2">
-                        <div className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20">
-                            <GraduationCap className="text-white" size={20} />
-                            <div className="absolute inset-0 bg-white/20 rounded-xl pointer-events-none" />
-                        </div>
-                        <div>
-                            <h1 className="text-lg font-bold text-white tracking-tight leading-none mb-0.5">Kitobxon</h1>
-                            <p className="text-[11px] font-medium text-white/40 tracking-wide">Ta'lim Platformasi</p>
-                        </div>
-                    </div>
+
 
                     {/* Profile Card */}
                     <div className="relative group overflow-hidden rounded-2xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.05] transition-all duration-300">
@@ -138,10 +129,10 @@ export default function Sidebar() {
                                 <div className="flex flex-wrap gap-1.5">
                                     {/* Role Badge */}
                                     <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] border ${isAdmin
-                                            ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                                            : user?.role === 'teacher'
-                                                ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
-                                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                        ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                        : user?.role === 'teacher'
+                                            ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                                            : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                                         }`}>
                                         {isAdmin && <Crown size={9} />}
                                         <span className="text-[9px] font-bold uppercase tracking-wider">
