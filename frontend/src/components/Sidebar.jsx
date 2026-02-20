@@ -95,7 +95,7 @@ export default function Sidebar() {
             {open && <div className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />}
 
             {/* Sidebar */}
-            <aside className={`fixed lg:static top-0 left-0 z-40 w-[260px] h-screen bg-vercel-surface/95 backdrop-blur-xl border-r border-vercel-border/60
+            <aside className={`fixed lg:static top-0 left-0 z-40 w-[260px] h-screen bg-black/40 backdrop-blur-xl border-r border-white/10
                 flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
 
                 {/* Brand & Profile Section */}

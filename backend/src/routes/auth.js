@@ -67,7 +67,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         const { identifier, password } = req.body;
 
         // Email yoki Student ID orqali qidirish
-        const user = await db.get('SELECT * FROM users WHERE email = ? OR student_id = ?', [identifier, identifier]);
+        const user = await db.get('SELECT * FROM users WHERE LOWER(email) = LOWER(?) OR UPPER(student_id) = UPPER(?)', [identifier, identifier]);
 
         if (!user) {
             return res.status(401).json({ xabar: "Login yoki parol noto'g'ri" });

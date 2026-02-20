@@ -32,7 +32,7 @@ const registerSchema = Joi.object({
 });
 
 const loginSchema = Joi.object({
-    identifier: Joi.string().required().messages({
+    identifier: Joi.string().trim().required().messages({
         'any.required': 'Email yoki ID kiritish shart',
     }),
     password: Joi.string().required().messages({
@@ -76,11 +76,12 @@ const catalogSchema = Joi.object({
 
 const validate = (schema) => {
     return (req, res, next) => {
-        const { error } = schema.validate(req.body, { abortEarly: false });
+        const { error, value } = schema.validate(req.body, { abortEarly: false });
         if (error) {
             const xatolar = error.details.map(detail => detail.message);
             return res.status(400).json({ xabar: 'Validatsiya xatosi', xatolar });
         }
+        req.body = value; // Apply transformations (trim, uppercase, etc.)
         next();
     };
 };
