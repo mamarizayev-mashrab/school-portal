@@ -5,15 +5,17 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 // Bildirishnomalarni olish
-router.get('/', auth, (req, res) => {
+router.get('/', auth, async (req, res) => {
     try {
-        const rows = db.prepare(
-            'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50'
-        ).all(req.user.id);
-        const unread = db.prepare(
-            'SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND oqilgan = 0'
-        ).get(req.user.id);
-        res.json({ notifications: rows, unreadCount: unread.c });
+        const rows = await db.query(
+            'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 50',
+            [req.user.id]
+        );
+        const unread = await db.get(
+            'SELECT COUNT(*) as c FROM notifications WHERE user_id = ? AND oqilgan = 0',
+            [req.user.id]
+        );
+        res.json({ notifications: rows.rows || rows, unreadCount: unread ? parseInt(unread.c) : 0 });
     } catch (error) {
         console.error('Notifications xatosi:', error);
         res.status(500).json({ xabar: 'Server xatosi' });
@@ -21,9 +23,9 @@ router.get('/', auth, (req, res) => {
 });
 
 // Barchasini o'qilgan deb belgilash
-router.put('/read-all', auth, (req, res) => {
+router.put('/read-all', auth, async (req, res) => {
     try {
-        db.prepare('UPDATE notifications SET oqilgan = 1 WHERE user_id = ?').run(req.user.id);
+        await db.run('UPDATE notifications SET oqilgan = 1 WHERE user_id = ?', [req.user.id]);
         res.json({ xabar: "Barcha bildirishnomalar o'qildi" });
     } catch (error) {
         console.error('Read all xatosi:', error);
@@ -32,9 +34,9 @@ router.put('/read-all', auth, (req, res) => {
 });
 
 // Bitta bildirishnomani o'qilgan deb belgilash
-router.put('/:id/read', auth, (req, res) => {
+router.put('/:id/read', auth, async (req, res) => {
     try {
-        db.prepare('UPDATE notifications SET oqilgan = 1 WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+        await db.run('UPDATE notifications SET oqilgan = 1 WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
         res.json({ xabar: "Bildirishnoma o'qildi" });
     } catch (error) {
         console.error('Read notification xatosi:', error);
@@ -43,9 +45,9 @@ router.put('/:id/read', auth, (req, res) => {
 });
 
 // Bildirishnomani o'chirish
-router.delete('/:id', auth, (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
-        db.prepare('DELETE FROM notifications WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+        await db.run('DELETE FROM notifications WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
         res.json({ xabar: "Bildirishnoma o'chirildi" });
     } catch (error) {
         console.error('Delete notification xatosi:', error);

@@ -6,15 +6,16 @@ const { getUserBadges, checkBadges, updateStreak, getLevel, LEVELS, BADGE_DEFINI
 const router = express.Router();
 
 // O'z nishonlarimni olish
-router.get('/badges', auth, (req, res) => {
+router.get('/badges', auth, async (req, res) => {
     try {
         // Streak yangilash
-        updateStreak(req.user.id);
+        await updateStreak(req.user.id);
 
         // Yangi nishonlarni tekshirish
-        const newBadges = checkBadges(req.user.id);
-        const badges = getUserBadges(req.user.id);
-        const user = db.prepare('SELECT xp, level, streak_count FROM users WHERE id = ?').get(req.user.id);
+        const newBadges = await checkBadges(req.user.id);
+        const badges = await getUserBadges(req.user.id);
+
+        const user = await db.get('SELECT xp, level, streak_count FROM users WHERE id = ?', [req.user.id]);
         const levelInfo = getLevel(user.xp);
 
         res.json({
@@ -37,9 +38,9 @@ router.get('/badges', auth, (req, res) => {
 });
 
 // Streak yangilash
-router.post('/streak', auth, (req, res) => {
+router.post('/streak', auth, async (req, res) => {
     try {
-        const streak = updateStreak(req.user.id);
+        const streak = await updateStreak(req.user.id);
         res.json({ streak });
     } catch (error) {
         console.error('Streak xatosi:', error);
@@ -48,11 +49,11 @@ router.post('/streak', auth, (req, res) => {
 });
 
 // Level ma'lumotlari
-router.get('/level', auth, (req, res) => {
+router.get('/level', auth, async (req, res) => {
     try {
-        updateStreak(req.user.id);
+        await updateStreak(req.user.id);
 
-        const user = db.prepare('SELECT xp, level, streak_count FROM users WHERE id = ?').get(req.user.id);
+        const user = await db.get('SELECT xp, level, streak_count FROM users WHERE id = ?', [req.user.id]);
         const levelInfo = getLevel(user.xp);
         res.json({
             xp: user.xp,

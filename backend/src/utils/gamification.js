@@ -1,5 +1,6 @@
 /**
  * Gamifikatsiya tizimi — Nishonlar, XP, Level, Streak
+ * (Async/PG compatible version)
  */
 
 const db = require('../config/db');
@@ -52,15 +53,6 @@ function getLevel(xp) {
     };
 }
 
-// XP berish
-function addXP(userId, amount) {
-    db.prepare('UPDATE users SET xp = xp + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(amount, userId);
-    const user = db.prepare('SELECT xp FROM users WHERE id = ?').get(userId);
-    const levelInfo = getLevel(user.xp);
-    db.prepare('UPDATE users SET level = ? WHERE id = ?').run(levelInfo.level.name, userId);
-    return user.xp;
-}
-
 // XP miqdori — default qiymatlar
 const XP_AMOUNTS_DEFAULT = {
     ADD_BOOK: 10,
@@ -71,94 +63,120 @@ const XP_AMOUNTS_DEFAULT = {
     EARN_BADGE: 25,
 };
 
-// Fix #12: DB dan XP sozlamalarini o'qish
-function getXPAmounts() {
+// Async XP sozlamalarini olish
+async function getXPAmounts() {
     try {
-        const xpPerBook = db.prepare("SELECT value FROM system_settings WHERE key = 'xp_per_book'").get();
-        const xpPerPage = db.prepare("SELECT value FROM system_settings WHERE key = 'xp_per_page'").get();
+        const xpPerBook = await db.get("SELECT value FROM system_settings WHERE key = 'xp_per_book'");
+        const xpPerPage = await db.get("SELECT value FROM system_settings WHERE key = 'xp_per_page'");
+
+        // Agar DB bo'sh bo'lsa yoki xato bo'lsa, default qaytaradi
         return {
             ...XP_AMOUNTS_DEFAULT,
-            ADD_BOOK: xpPerBook ? parseInt(xpPerBook.value) || XP_AMOUNTS_DEFAULT.ADD_BOOK : XP_AMOUNTS_DEFAULT.ADD_BOOK,
+            ADD_BOOK: xpPerBook ? (parseInt(xpPerBook.value) || XP_AMOUNTS_DEFAULT.ADD_BOOK) : XP_AMOUNTS_DEFAULT.ADD_BOOK,
         };
     } catch (e) {
         return XP_AMOUNTS_DEFAULT;
     }
 }
 
-// Backward compatibility uchun proxy
-const XP_AMOUNTS = new Proxy(XP_AMOUNTS_DEFAULT, {
-    get(target, prop) {
-        const live = getXPAmounts();
-        return live[prop] !== undefined ? live[prop] : target[prop];
-    }
-});
+// XP berish (Async)
+async function addXP(userId, amount) {
+    await db.run('UPDATE users SET xp = xp + ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [amount, userId]);
+    const user = await db.get('SELECT xp FROM users WHERE id = ?', [userId]);
+    const levelInfo = getLevel(user.xp);
+    await db.run('UPDATE users SET level = ? WHERE id = ?', [levelInfo.level.name, userId]);
+    return user.xp;
+}
 
-// Streak tekshirish va yangilash
-function updateStreak(userId) {
-    const user = db.prepare('SELECT streak_count, last_activity_date FROM users WHERE id = ?').get(userId);
+// Streak tekshirish va yangilash (Async)
+async function updateStreak(userId) {
+    const user = await db.get('SELECT streak_count, last_activity_date FROM users WHERE id = ?', [userId]);
+    if (!user) return 0;
+
     const today = new Date().toISOString().split('T')[0];
-
     if (user.last_activity_date === today) return user.streak_count;
 
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
     let newStreak = 1;
 
+    // Kecha faol bo'lgan bo'lsa, streak oshiriladi
     if (user.last_activity_date === yesterday) {
-        newStreak = user.streak_count + 1;
-        addXP(userId, XP_AMOUNTS.DAILY_STREAK);
+        newStreak = (user.streak_count || 0) + 1;
+        const amounts = await getXPAmounts();
+        await addXP(userId, amounts.DAILY_STREAK);
     }
+    // Aks holda u 1 ga tushadi (chunki bugun kirdi)
 
-    db.prepare('UPDATE users SET streak_count = ?, last_activity_date = ? WHERE id = ?').run(newStreak, today, userId);
+    await db.run('UPDATE users SET streak_count = ?, last_activity_date = ? WHERE id = ?', [newStreak, today, userId]);
     return newStreak;
 }
 
-// Nishonlarni tekshirish
-function checkBadges(userId) {
-    const stats = getUserStats(userId);
-    const existing = db.prepare('SELECT badge_key FROM badges WHERE user_id = ?').all(userId).map(b => b.badge_key);
+// Statistikani olish (Async helper)
+async function getUserStats(userId) {
+    const books = await db.get('SELECT COUNT(*) as c, COALESCE(SUM(sahifalar_soni), 0) as p FROM reading_logs WHERE user_id = ?', [userId]);
+    const tests = await db.get('SELECT COUNT(*) as c FROM results WHERE user_id = ?', [userId]);
+    const perfect = await db.get('SELECT COUNT(*) as c FROM results WHERE user_id = ? AND ball >= 100', [userId]);
+    const approved = await db.get('SELECT COUNT(*) as c FROM reading_logs WHERE user_id = ? AND xulosa_tasdiqlangan = 1', [userId]);
+    const user = await db.get('SELECT streak_count FROM users WHERE id = ?', [userId]);
+
+    return {
+        books: parseInt(books?.c || 0),
+        pages: parseInt(books?.p || 0),
+        tests: parseInt(tests?.c || 0),
+        perfectTests: parseInt(perfect?.c || 0),
+        approved: parseInt(approved?.c || 0),
+        streak: user?.streak_count || 0,
+    };
+}
+
+// Nishonlarni tekshirish (Async)
+async function checkBadges(userId) {
+    const stats = await getUserStats(userId);
+    const existingRows = await db.query('SELECT badge_key FROM badges WHERE user_id = ?', [userId]);
+
+    // db.query returns result object in PG, or array in SQLite wrapper. 
+    // db.js wrapper unifies this: query returns { rows: [] } usually or array.
+    // Let's assume db.query returns { rows: [] } based on previous usage or check wrapper.
+    // Actually, my db.js wrapper for SQLite returns rows directly for query?
+    // Wait, let's use db.get/all pattern if possible or handle both.
+    // My db.js: query() returns res (PG) or matches PG structure. 
+    // safely: use (res.rows || res)
+
+    const rows = existingRows.rows || existingRows || [];
+    const existing = rows.map(b => b.badge_key);
+
+    const amounts = await getXPAmounts();
     const newBadges = [];
 
     for (const badge of BADGE_DEFINITIONS) {
         if (!existing.includes(badge.key) && badge.check(stats)) {
-            db.prepare(
-                'INSERT OR IGNORE INTO badges (user_id, badge_key, badge_name, badge_icon, badge_desc) VALUES (?, ?, ?, ?, ?)'
-            ).run(userId, badge.key, badge.name, badge.icon, badge.desc);
+            // Nishon berish
+            await db.run(
+                'INSERT INTO badges (user_id, badge_key, badge_name, badge_icon, badge_desc) VALUES (?, ?, ?, ?, ?)',
+                [userId, badge.key, badge.name, badge.icon, badge.desc]
+            );
 
-            addXP(userId, XP_AMOUNTS.EARN_BADGE);
+            await addXP(userId, amounts.EARN_BADGE);
             newBadges.push(badge);
 
             // Notification
-            db.prepare(
-                'INSERT INTO notifications (user_id, turi, xabar) VALUES (?, ?, ?)'
-            ).run(userId, 'badge', `🏅 Yangi nishon: "${badge.name}" — ${badge.desc}`);
+            await db.run(
+                'INSERT INTO notifications (user_id, turi, xabar) VALUES (?, ?, ?)',
+                [userId, 'badge', `🏅 Yangi nishon: "${badge.name}" — ${badge.desc}`]
+            );
         }
     }
 
     return newBadges;
 }
 
-function getUserStats(userId) {
-    const books = db.prepare('SELECT COUNT(*) as c, COALESCE(SUM(sahifalar_soni), 0) as p FROM reading_logs WHERE user_id = ?').get(userId);
-    const tests = db.prepare('SELECT COUNT(*) as c FROM results WHERE user_id = ?').get(userId);
-    const perfect = db.prepare('SELECT COUNT(*) as c FROM results WHERE user_id = ? AND ball >= 100').get(userId);
-    const approved = db.prepare('SELECT COUNT(*) as c FROM reading_logs WHERE user_id = ? AND xulosa_tasdiqlangan = 1').get(userId);
-    const user = db.prepare('SELECT streak_count FROM users WHERE id = ?').get(userId);
-
-    return {
-        books: books.c,
-        pages: books.p,
-        tests: tests.c,
-        perfectTests: perfect.c,
-        approved: approved.c,
-        streak: user.streak_count,
-    };
-}
-
-function getUserBadges(userId) {
-    return db.prepare('SELECT * FROM badges WHERE user_id = ? ORDER BY earned_at DESC').all(userId);
+// User nishonlarini olish (Async)
+async function getUserBadges(userId) {
+    const res = await db.query('SELECT * FROM badges WHERE user_id = ? ORDER BY earned_at DESC', [userId]);
+    return res.rows || res || [];
 }
 
 module.exports = {
-    checkBadges, getUserBadges, updateStreak, addXP, getLevel,
-    XP_AMOUNTS, LEVELS, BADGE_DEFINITIONS,
+    checkBadges, getUserBadges, updateStreak, addXP, getLevel, getXPAmounts,
+    LEVELS, BADGE_DEFINITIONS,
 };
