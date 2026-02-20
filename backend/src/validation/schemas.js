@@ -15,7 +15,7 @@ const registerSchema = Joi.object({
         then: Joi.forbidden().messages({ 'any.unknown': 'O\'quvchilar uchun email kerak emas' }),
         otherwise: Joi.required().messages({ 'any.required': 'Xodimlar uchun email shart' })
     }),
-    student_id: Joi.string().regex(/^[A-Z]{2}\d{4}$/).when('role', {
+    student_id: Joi.string().trim().uppercase().regex(/^[A-Z]{2}\d{4}$/).when('role', {
         is: 'student',
         then: Joi.required().messages({
             'string.pattern.base': 'ID formati: 2 ta harf + 4 ta raqam (masalan: AA1234)',
@@ -99,7 +99,7 @@ const adminCreateUserSchema = Joi.object({
         then: Joi.forbidden().messages({ 'any.unknown': 'O\'quvchilar uchun email kerak emas' }),
         otherwise: Joi.required().messages({ 'any.required': 'Xodimlar uchun email shart' })
     }),
-    student_id: Joi.string().regex(/^[A-Z]{2}\d{4}$/).when('role', {
+    student_id: Joi.string().trim().uppercase().regex(/^[A-Z]{2}\d{4}$/).when('role', {
         is: 'student',
         then: Joi.required().messages({
             'string.pattern.base': 'ID formati: 2 ta harf + 4 ta raqam (masalan: AA1234)',
