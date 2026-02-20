@@ -97,24 +97,26 @@ export default function Profile() {
                     </div>
                 </div>
 
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-4 mt-6">
-                    <div className="text-center p-3 bg-vercel-bg rounded-lg border border-vercel-border">
-                        <BookOpen size={18} className="mx-auto text-vercel-accent mb-1" />
-                        <p className="text-lg font-bold text-vercel-text">{profile.kitoblar_soni}</p>
-                        <p className="text-xs text-vercel-text-secondary">Kitoblar</p>
+                {/* Stats - Only for Students */}
+                {profile.role === 'student' && (
+                    <div className="grid grid-cols-3 gap-4 mt-6">
+                        <div className="text-center p-3 bg-vercel-bg rounded-lg border border-vercel-border">
+                            <BookOpen size={18} className="mx-auto text-vercel-accent mb-1" />
+                            <p className="text-lg font-bold text-vercel-text">{profile.kitoblar_soni || 0}</p>
+                            <p className="text-xs text-vercel-text-secondary">Kitoblar</p>
+                        </div>
+                        <div className="text-center p-3 bg-vercel-bg rounded-lg border border-vercel-border">
+                            <Award size={18} className="mx-auto text-yellow-400 mb-1" />
+                            <p className="text-lg font-bold text-vercel-text">{profile.nishonlar_soni || 0}</p>
+                            <p className="text-xs text-vercel-text-secondary">Nishonlar</p>
+                        </div>
+                        <div className="text-center p-3 bg-vercel-bg rounded-lg border border-vercel-border">
+                            <span className="text-2xl">⚡</span>
+                            <p className="text-lg font-bold text-vercel-text">{profile.xp || 0}</p>
+                            <p className="text-xs text-vercel-text-secondary">XP</p>
+                        </div>
                     </div>
-                    <div className="text-center p-3 bg-vercel-bg rounded-lg border border-vercel-border">
-                        <Award size={18} className="mx-auto text-yellow-400 mb-1" />
-                        <p className="text-lg font-bold text-vercel-text">{profile.nishonlar_soni}</p>
-                        <p className="text-xs text-vercel-text-secondary">Nishonlar</p>
-                    </div>
-                    <div className="text-center p-3 bg-vercel-bg rounded-lg border border-vercel-border">
-                        <span className="text-2xl">⚡</span>
-                        <p className="text-lg font-bold text-vercel-text">{profile.xp}</p>
-                        <p className="text-xs text-vercel-text-secondary">XP</p>
-                    </div>
-                </div>
+                )}
             </div>
 
             {/* Avatar ranglari */}
@@ -157,11 +159,15 @@ export default function Profile() {
                                 className="w-full px-3 py-2 bg-vercel-bg border border-vercel-border rounded-lg text-sm text-vercel-text disabled:opacity-50 focus:outline-none focus:border-vercel-accent transition-all" />
                         </div>
                     </div>
-                    <div>
-                        <label className="text-xs text-vercel-text-secondary block mb-1">Sinf</label>
-                        <input value={form.sinf} onChange={e => setForm({ ...form, sinf: e.target.value })} disabled={!editing}
-                            className="w-full px-3 py-2 bg-vercel-bg border border-vercel-border rounded-lg text-sm text-vercel-text disabled:opacity-50 focus:outline-none focus:border-vercel-accent transition-all" />
-                    </div>
+                    {profile.role !== 'superadmin' && (
+                        <div>
+                            <label className="text-xs text-vercel-text-secondary block mb-1">
+                                {profile.role === 'teacher' ? "Rahbarlik Sinfi" : "Sinf"}
+                            </label>
+                            <input value={form.sinf} onChange={e => setForm({ ...form, sinf: e.target.value })} disabled={!editing || profile.role === 'superadmin'}
+                                className="w-full px-3 py-2 bg-vercel-bg border border-vercel-border rounded-lg text-sm text-vercel-text disabled:opacity-50 focus:outline-none focus:border-vercel-accent transition-all" />
+                        </div>
+                    )}
                 </div>
             </div>
 

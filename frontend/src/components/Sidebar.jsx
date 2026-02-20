@@ -70,7 +70,8 @@ export default function Sidebar() {
         { to: '/admin/library', icon: Library, label: 'Kutubxona' },
         { to: '/teacher/summaries', icon: FileText, label: 'Xulosalar', badge: pendingSummaries },
         ...(user?.role === 'superadmin' ? [{ to: '/admin/audit', icon: ShieldAlert, label: 'Audit Log' }] : []),
-        { to: '/admin/settings', icon: Settings, label: 'Sozlamalar' }
+        { to: '/admin/settings', icon: Settings, label: 'Sozlamalar' },
+        { to: '/profile', icon: User, label: 'Profilim' }
     ];
 
     const links = (user?.role === 'admin' || user?.role === 'superadmin') ? adminLinks : user?.role === 'teacher' ? teacherLinks : studentLinks;

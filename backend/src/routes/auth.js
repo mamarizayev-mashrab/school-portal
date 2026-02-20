@@ -121,4 +121,44 @@ router.get('/me', require('../middleware/auth'), async (req, res) => {
     }
 });
 
+// Profilni Yangilash (Hamma uchun)
+router.put('/me', require('../middleware/auth'), async (req, res) => {
+    try {
+        const { ism, familiya, email, currentPassword, newPassword } = req.body;
+        const userId = req.user.id;
+
+        const user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
+        if (!user) return res.status(404).json({ xabar: "Foydalanuvchi topilmadi" });
+
+        // 1. Agar parol o'zgartirilayotgan bo'lsa
+        if (newPassword) {
+            if (!currentPassword) return res.status(400).json({ xabar: "Parolni o'zgartirish uchun eski parolni kiriting" });
+
+            const match = await bcrypt.compare(currentPassword, user.password_hash);
+            if (!match) return res.status(400).json({ xabar: "Eski parol noto'g'ri" });
+
+            const hash = await bcrypt.hash(newPassword, 12);
+            await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [hash, userId]);
+        }
+
+        // 2. Email o'zgartirilayotgan bo'lsa, unikal ekanligini tekshirish
+        if (email && email !== user.email) {
+            const exists = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+            if (exists) return res.status(400).json({ xabar: "Bu email allaqachon band" });
+        }
+
+        // 3. Asosiy ma'lumotlarni yangilash
+        await db.run(
+            'UPDATE users SET ism = ?, familiya = ?, email = ? WHERE id = ?',
+            [ism || user.ism, familiya || user.familiya, email || user.email, userId]
+        );
+
+        res.json({ xabar: "Muvaffaqiyatli saqlandi" });
+
+    } catch (error) {
+        console.error('Profile update xatosi:', error);
+        res.status(500).json({ xabar: 'Server xatosi' });
+    }
+});
+
 module.exports = router;
