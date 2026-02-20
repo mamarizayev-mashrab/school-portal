@@ -9,7 +9,7 @@ const router = express.Router();
 // Ro'yxatdan o'tish
 router.post('/register', validate(registerSchema), async (req, res) => {
     try {
-        const setting = db.prepare("SELECT value FROM system_settings WHERE key = 'registration_open'").get();
+        const setting = await db.get("SELECT value FROM system_settings WHERE key = 'registration_open'");
         if (setting && setting.value === 'false') {
             return res.status(403).json({ xabar: "Ro'yxatdan o'tish vaqtincha yopilgan" });
         }
@@ -17,23 +17,24 @@ router.post('/register', validate(registerSchema), async (req, res) => {
         const { ism, familiya, email, student_id, password, sinf, role = 'student' } = req.body;
 
         // Unikal tekshiruv
+        let existing;
         if (role === 'student') {
-            const existingId = db.prepare('SELECT id FROM users WHERE student_id = ?').get(student_id);
-            if (existingId) return res.status(400).json({ xabar: "Bu ID allaqachon mavjud" });
+            existing = await db.get('SELECT id FROM users WHERE student_id = ?', [student_id]);
+            if (existing) return res.status(400).json({ xabar: "Bu ID allaqachon mavjud" });
         } else {
-            const existingEmail = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-            if (existingEmail) return res.status(400).json({ xabar: "Bu email allaqachon mavjud" });
+            existing = await db.get('SELECT id FROM users WHERE email = ?', [email]);
+            if (existing) return res.status(400).json({ xabar: "Bu email allaqachon mavjud" });
         }
 
         const password_hash = await bcrypt.hash(password, 12);
 
-        const stmt = db.prepare(
-            'INSERT INTO users (ism, familiya, email, student_id, password_hash, role, sinf) VALUES (?, ?, ?, ?, ?, ?, ?)'
-        );
-
         try {
-            const result = stmt.run(ism, familiya, email || null, student_id || null, password_hash, role, sinf || null);
-            const user = db.prepare('SELECT id, ism, familiya, email, student_id, role, sinf FROM users WHERE id = ?').get(result.lastInsertRowid);
+            const result = await db.run(
+                'INSERT INTO users (ism, familiya, email, student_id, password_hash, role, sinf) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [ism, familiya, email || null, student_id || null, password_hash, role, sinf || null]
+            );
+
+            const user = await db.get('SELECT id, ism, familiya, email, student_id, role, sinf FROM users WHERE id = ?', [result.lastInsertRowid]);
 
             const token = jwt.sign(
                 { id: user.id, email: user.email, student_id: user.student_id, role: user.role, sinf: user.sinf },
@@ -47,7 +48,8 @@ router.post('/register', validate(registerSchema), async (req, res) => {
                 user,
             });
         } catch (err) {
-            if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            // Postgres (23505) & SQLite constraint codes
+            if (err.code === 'SQLITE_CONSTRAINT_UNIQUE' || err.code === '23505') {
                 return res.status(400).json({ xabar: "Foydalanuvchi (Email yoki ID) allaqachon mavjud" });
             }
             throw err;
@@ -65,7 +67,7 @@ router.post('/login', validate(loginSchema), async (req, res) => {
         const { identifier, password } = req.body;
 
         // Email yoki Student ID orqali qidirish
-        const user = db.prepare('SELECT * FROM users WHERE email = ? OR student_id = ?').get(identifier, identifier);
+        const user = await db.get('SELECT * FROM users WHERE email = ? OR student_id = ?', [identifier, identifier]);
 
         if (!user) {
             return res.status(401).json({ xabar: "Login yoki parol noto'g'ri" });
@@ -102,11 +104,12 @@ router.post('/login', validate(loginSchema), async (req, res) => {
 });
 
 // Profil olish
-router.get('/me', require('../middleware/auth'), (req, res) => {
+router.get('/me', require('../middleware/auth'), async (req, res) => {
     try {
-        const user = db.prepare(
-            'SELECT id, ism, familiya, email, student_id, role, sinf, created_at FROM users WHERE id = ?'
-        ).get(req.user.id);
+        const user = await db.get(
+            'SELECT id, ism, familiya, email, student_id, role, sinf, created_at FROM users WHERE id = ?',
+            [req.user.id]
+        );
 
         if (!user) {
             return res.status(404).json({ xabar: 'Foydalanuvchi topilmadi' });
