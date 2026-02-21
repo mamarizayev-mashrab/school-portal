@@ -7,11 +7,12 @@ const { checkBadges, updateStreak, addXP, XP_AMOUNTS } = require('../utils/gamif
 const router = express.Router();
 
 // O'qilgan kitoblarni olish
-router.get('/', auth, (req, res) => {
+router.get('/', auth, async (req, res) => {
     try {
-        const rows = db.prepare(
-            'SELECT * FROM reading_logs WHERE user_id = ? ORDER BY oqilgan_sana DESC'
-        ).all(req.user.id);
+        const rows = await db.query(
+            'SELECT * FROM reading_logs WHERE user_id = ? ORDER BY oqilgan_sana DESC',
+            [req.user.id]
+        );
         res.json(rows);
     } catch (error) {
         console.error('Kitoblar xatosi:', error);
@@ -20,22 +21,22 @@ router.get('/', auth, (req, res) => {
 });
 
 // Yangi kitob qo'shish
-router.post('/', auth, validate(bookSchema), (req, res) => {
+router.post('/', auth, validate(bookSchema), async (req, res) => {
     try {
         const { kitob_nomi, muallif, sahifalar_soni, oqilgan_sana, xulosa } = req.body;
 
-        const stmt = db.prepare(
+        const result = await db.run(
             `INSERT INTO reading_logs (user_id, kitob_nomi, muallif, sahifalar_soni, oqilgan_sana, xulosa)
-       VALUES (?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?)`,
+            [req.user.id, kitob_nomi, muallif, sahifalar_soni, oqilgan_sana, xulosa]
         );
-        const result = stmt.run(req.user.id, kitob_nomi, muallif, sahifalar_soni, oqilgan_sana, xulosa);
 
-        const kitob = db.prepare('SELECT * FROM reading_logs WHERE id = ?').get(result.lastInsertRowid);
+        const kitob = await db.get('SELECT * FROM reading_logs WHERE id = ?', [result.lastInsertRowid]);
 
         // Gamifikatsiya
-        addXP(req.user.id, XP_AMOUNTS.ADD_BOOK);
-        updateStreak(req.user.id);
-        const newBadges = checkBadges(req.user.id);
+        await addXP(req.user.id, XP_AMOUNTS.ADD_BOOK);
+        await updateStreak(req.user.id);
+        const newBadges = await checkBadges(req.user.id);
 
         res.status(201).json({
             xabar: "Kitob muvaffaqiyatli qo'shildi",
@@ -49,22 +50,23 @@ router.post('/', auth, validate(bookSchema), (req, res) => {
 });
 
 // Kitobni tahrirlash
-router.put('/:id', auth, (req, res) => {
+router.put('/:id', auth, async (req, res) => {
     try {
         const { kitob_nomi, muallif, sahifalar_soni, oqilgan_sana, xulosa } = req.body;
 
-        const check = db.prepare('SELECT * FROM reading_logs WHERE id = ? AND user_id = ?').get(req.params.id, req.user.id);
+        const check = await db.get('SELECT * FROM reading_logs WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
         if (!check) {
             return res.status(404).json({ xabar: 'Kitob topilmadi' });
         }
 
-        db.prepare(
+        await db.run(
             `UPDATE reading_logs SET kitob_nomi = ?, muallif = ?, sahifalar_soni = ?,
        oqilgan_sana = ?, xulosa = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND user_id = ?`
-        ).run(kitob_nomi, muallif, sahifalar_soni, oqilgan_sana, xulosa, req.params.id, req.user.id);
+       WHERE id = ? AND user_id = ?`,
+            [kitob_nomi, muallif, sahifalar_soni, oqilgan_sana, xulosa, req.params.id, req.user.id]
+        );
 
-        const kitob = db.prepare('SELECT * FROM reading_logs WHERE id = ?').get(req.params.id);
+        const kitob = await db.get('SELECT * FROM reading_logs WHERE id = ?', [req.params.id]);
         res.json({ xabar: 'Kitob yangilandi', kitob });
     } catch (error) {
         console.error('Kitob yangilash xatosi:', error);
@@ -73,9 +75,9 @@ router.put('/:id', auth, (req, res) => {
 });
 
 // Kitobni o'chirish
-router.delete('/:id', auth, (req, res) => {
+router.delete('/:id', auth, async (req, res) => {
     try {
-        const result = db.prepare('DELETE FROM reading_logs WHERE id = ? AND user_id = ?').run(req.params.id, req.user.id);
+        const result = await db.run('DELETE FROM reading_logs WHERE id = ? AND user_id = ?', [req.params.id, req.user.id]);
 
         if (result.changes === 0) {
             return res.status(404).json({ xabar: 'Kitob topilmadi' });

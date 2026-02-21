@@ -8,16 +8,17 @@ const router = express.Router();
 
 // Fix #18: /results/my routeni /:id dan OLDIN joylashtirish
 // O'quvchining test natijalari
-router.get('/results/my', auth, (req, res) => {
+router.get('/results/my', auth, async (req, res) => {
     try {
-        const rows = db.prepare(
+        const rows = await db.query(
             `SELECT r.*, q.reading_log_id, rl.kitob_nomi
        FROM results r
        JOIN quizzes q ON r.quiz_id = q.id
        JOIN reading_logs rl ON q.reading_log_id = rl.id
        WHERE r.user_id = ?
-       ORDER BY r.topshirilgan_sana DESC`
-        ).all(req.user.id);
+       ORDER BY r.topshirilgan_sana DESC`,
+            [req.user.id]
+        );
 
         res.json(rows);
     } catch (error) {
@@ -27,16 +28,16 @@ router.get('/results/my', auth, (req, res) => {
 });
 
 // Xulosa asosida test yaratish
-router.post('/generate/:logId', auth, (req, res) => {
+router.post('/generate/:logId', auth, async (req, res) => {
     try {
         const { logId } = req.params;
 
-        const log = db.prepare('SELECT * FROM reading_logs WHERE id = ? AND user_id = ?').get(logId, req.user.id);
+        const log = await db.get('SELECT * FROM reading_logs WHERE id = ? AND user_id = ?', [logId, req.user.id]);
         if (!log) {
             return res.status(404).json({ xabar: 'Kitob topilmadi' });
         }
 
-        const existingQuiz = db.prepare('SELECT * FROM quizzes WHERE reading_log_id = ?').get(logId);
+        const existingQuiz = await db.get('SELECT * FROM quizzes WHERE reading_log_id = ?', [logId]);
         if (existingQuiz) {
             return res.json({
                 xabar: 'Test allaqachon yaratilgan',
@@ -46,11 +47,13 @@ router.post('/generate/:logId', auth, (req, res) => {
 
         const savollar = generateQuiz(log.xulosa, log.kitob_nomi, log.muallif);
 
-        const result = db.prepare(
-            'INSERT INTO quizzes (reading_log_id, savollar) VALUES (?, ?)'
-        ).run(logId, JSON.stringify(savollar));
+        // JSON.stringify(savollar) ensures we store valid JSON text
+        const result = await db.run(
+            'INSERT INTO quizzes (reading_log_id, savollar) VALUES (?, ?)',
+            [logId, JSON.stringify(savollar)]
+        );
 
-        const quiz = db.prepare('SELECT * FROM quizzes WHERE id = ?').get(result.lastInsertRowid);
+        const quiz = await db.get('SELECT * FROM quizzes WHERE id = ?', [result.lastInsertRowid]);
 
         res.status(201).json({
             xabar: 'Test muvaffaqiyatli yaratildi',
@@ -63,9 +66,9 @@ router.post('/generate/:logId', auth, (req, res) => {
 });
 
 // Testni olish
-router.get('/:id', auth, (req, res) => {
+router.get('/:id', auth, async (req, res) => {
     try {
-        const quiz = db.prepare('SELECT * FROM quizzes WHERE id = ?').get(req.params.id);
+        const quiz = await db.get('SELECT * FROM quizzes WHERE id = ?', [req.params.id]);
         if (!quiz) {
             return res.status(404).json({ xabar: 'Test topilmadi' });
         }
@@ -77,11 +80,11 @@ router.get('/:id', auth, (req, res) => {
 });
 
 // Javob topshirish
-router.post('/:id/submit', auth, (req, res) => {
+router.post('/:id/submit', auth, async (req, res) => {
     try {
         const { javoblar } = req.body;
 
-        const quiz = db.prepare('SELECT * FROM quizzes WHERE id = ?').get(req.params.id);
+        const quiz = await db.get('SELECT * FROM quizzes WHERE id = ?', [req.params.id]);
         if (!quiz) {
             return res.status(404).json({ xabar: 'Test topilmadi' });
         }
@@ -110,19 +113,21 @@ router.post('/:id/submit', auth, (req, res) => {
 
         const ball = jami > 0 ? (togri / jami) * 100 : 0;
 
-        const result = db.prepare(
-            'INSERT INTO results (quiz_id, user_id, javoblar, ball) VALUES (?, ?, ?, ?)'
-        ).run(req.params.id, req.user.id, JSON.stringify(javoblar), ball);
+        const result = await db.run(
+            'INSERT INTO results (quiz_id, user_id, javoblar, ball) VALUES (?, ?, ?, ?)',
+            [req.params.id, req.user.id, JSON.stringify(javoblar), ball]
+        );
 
-        const natija = db.prepare('SELECT * FROM results WHERE id = ?').get(result.lastInsertRowid);
+        const natija = await db.get('SELECT * FROM results WHERE id = ?', [result.lastInsertRowid]);
 
         // Gamifikatsiya
-        addXP(req.user.id, XP_AMOUNTS.COMPLETE_TEST);
-        if (ball >= 100) addXP(req.user.id, XP_AMOUNTS.PERFECT_TEST);
-        checkBadges(req.user.id);
-        db.prepare(
-            'INSERT INTO notifications (user_id, turi, xabar) VALUES (?, ?, ?)'
-        ).run(req.user.id, 'test', `📝 Test natijangiz: ${ball.toFixed(0)}% (${togri}/${jami})`);
+        await addXP(req.user.id, XP_AMOUNTS.COMPLETE_TEST);
+        if (ball >= 100) await addXP(req.user.id, XP_AMOUNTS.PERFECT_TEST);
+        await checkBadges(req.user.id);
+        await db.run(
+            'INSERT INTO notifications (user_id, turi, xabar) VALUES (?, ?, ?)',
+            [req.user.id, 'test', `📝 Test natijangiz: ${ball.toFixed(0)}% (${togri}/${jami})`]
+        );
 
         res.json({
             xabar: 'Test natijasi saqlandi',
